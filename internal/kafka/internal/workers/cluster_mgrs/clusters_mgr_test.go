@@ -2019,6 +2019,7 @@ func buildObservabilityConfig() observatorium.ObservabilityConfiguration {
 func buildResourceSet(observabilityConfig observatorium.ObservabilityConfiguration, clusterConfig config.DataplaneClusterConfig, ingressDNS string, cluster *api.Cluster) (types.ResourceSet, error) {
 	strimziNamespace := strimziAddonNamespace
 	kasFleetshardNamespace := kasFleetshardAddonNamespace
+	observabilityOLMConfig := clusterConfig.ObservabilityOLMConfig
 
 	resources := []interface{}{
 		&userv1.Group{
@@ -2087,7 +2088,7 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 				Kind:       "Namespace",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name: observabilityNamespace,
+				Name: observabilityOLMConfig.Namespace,
 			},
 		},
 		&k8sCoreV1.Secret{
@@ -2097,7 +2098,7 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      observatoriumDexSecretName,
-				Namespace: observabilityNamespace,
+				Namespace: observabilityOLMConfig.Namespace,
 			},
 			Type: k8sCoreV1.SecretTypeOpaque,
 			StringData: map[string]string{
@@ -2117,7 +2118,7 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      observatoriumSSOSecretName,
-				Namespace: observabilityNamespace,
+				Namespace: observabilityOLMConfig.Namespace,
 			},
 			Type: k8sCoreV1.SecretTypeOpaque,
 			StringData: map[string]string{
@@ -2139,11 +2140,11 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      observabilityCatalogSourceName,
-				Namespace: observabilityNamespace,
+				Namespace: observabilityOLMConfig.Namespace,
 			},
 			Spec: v1alpha1.CatalogSourceSpec{
 				SourceType: v1alpha1.SourceTypeGrpc,
-				Image:      observabilityCatalogSourceImage,
+				Image:      clusterConfig.ObservabilityOLMConfig.IndexImage,
 			},
 		},
 		&v1alpha2.OperatorGroup{
@@ -2153,10 +2154,10 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      observabilityOperatorGroupName,
-				Namespace: observabilityNamespace,
+				Namespace: observabilityOLMConfig.Namespace,
 			},
 			Spec: v1alpha2.OperatorGroupSpec{
-				TargetNamespaces: []string{observabilityNamespace},
+				TargetNamespaces: []string{observabilityOLMConfig.Namespace},
 			},
 		},
 		&v1alpha1.Subscription{
@@ -2166,13 +2167,13 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      observabilitySubscriptionName,
-				Namespace: observabilityNamespace,
+				Namespace: observabilityOLMConfig.Namespace,
 			},
 			Spec: &v1alpha1.SubscriptionSpec{
 				CatalogSource:          observabilityCatalogSourceName,
-				Channel:                "alpha",
-				CatalogSourceNamespace: observabilityNamespace,
-				StartingCSV:            "observability-operator.v3.0.10",
+				Channel:                observabilityOLMConfig.SubscriptionChannel,
+				CatalogSourceNamespace: observabilityOLMConfig.Namespace,
+				StartingCSV:            observabilityOLMConfig.SubscriptionStartingCSV,
 				InstallPlanApproval:    v1alpha1.ApprovalAutomatic,
 				Package:                observabilitySubscriptionName,
 			},

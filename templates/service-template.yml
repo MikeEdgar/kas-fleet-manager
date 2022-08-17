@@ -578,6 +578,26 @@ parameters:
   description: As a user, one can create up to N defined max developer instances if they do not have quota to create standard instances.
   value: "1"
 
+- name: OBSERVABILITY_OLM_INDEX_IMAGE
+  displayName: Observability operator OLM index image
+  description: Observability operator OLM index image
+  value: "quay.io/rhoas/observability-operator-index:v3.0.14"
+
+- name: OBSERVABILITY_OLM_PACKAGE_NAME
+  displayName: Observability operator OLM package name
+  description: Observability operator OLM package name
+  value: "observability-operator"
+
+- name: OBSERVABILITY_OPERATOR_STARTING_CSV
+  displayName: Observability operator subscription starting config
+  description: Observability operator subscription starting config
+  value: "observability-operator.v3.0.14"
+
+- name: OBSERVABILITY_OPERATOR_SUBSCRIPTION_CONFIG
+  displayName: Observability operator subscription config
+  description: Observability operator subscription config. This is applied for standalone clusters only. The configuration must be of type https://pkg.go.dev/github.com/operator-framework/api@v0.3.25/pkg/operators/v1alpha1?utm_source=gopls#SubscriptionConfig
+  value: "{}"
+
 objects:
   - kind: ConfigMap
     apiVersion: v1
@@ -688,6 +708,15 @@ objects:
     data:
       strimzi-operator-subscription-spec-config.yaml: |-
         ${STRIMZI_OPERATOR_SUBSCRIPTION_CONFIG}
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: kas-fleet-manager-observability-operator-subscription-config
+      annotations:
+        qontract.recycle: "true"
+    data:
+      observability-operator-subscription-spec-config.yaml: |-
+        ${OBSERVABILITY_OPERATOR_SUBSCRIPTION_CONFIG}
   - kind: ConfigMap
     apiVersion: v1
     metadata:
@@ -850,6 +879,9 @@ objects:
           - name: kas-fleet-manager-strimzi-operator-subscription-config
             configMap:
               name: kas-fleet-manager-strimzi-operator-subscription-config
+          - name: kas-fleet-manager-observability-operator-subscription-config
+            configMap:
+              name: kas-fleet-manager-observability-operator-subscription-config
           - name: envoy-config
             configMap:
               name: kas-fleet-manager-envoy-config
@@ -944,6 +976,9 @@ objects:
             - name: kas-fleet-manager-strimzi-operator-subscription-config
               mountPath: /config/strimzi-operator-subscription-spec-config.yaml
               subPath: strimzi-operator-subscription-spec-config.yaml
+            - name: kas-fleet-manager-observability-operator-subscription-config
+              mountPath: /config/observability-operator-subscription-spec-config.yaml
+              subPath: observability-operator-subscription-spec-config.yaml
             env:
               - name: "OCM_ENV"
                 value: "${ENVIRONMENT}"
@@ -1084,6 +1119,10 @@ objects:
             - --reconciler-repeat-interval=${RECONCILER_REPEAT_INTERVAL}
             - --leader-election-reconciler-repeat-interval=${LEADER_ELECTION_RECONCILER_REPEAT_INTERVAL}
             - --leader-lease-expiration-time=${LEADER_LEASE_EXPIRATION_TIME}
+            - --observability-operator-index-image=${OBSERVABILITY_OLM_INDEX_IMAGE}
+            - --observability-operator-package=${OBSERVABILITY_OLM_PACKAGE_NAME}
+            - --observability-operator-subscription-config-file=/config/observability-operator-subscription-spec-config.yaml
+            - --observability-operator-starting-csv=${OBSERVABILITY_OPERATOR_STARTING_CSV}
             - --strimzi-operator-package=${STRIMZI_OLM_PACKAGE_NAME}
             - --strimzi-operator-subscription-config-file=/config/strimzi-operator-subscription-spec-config.yaml
             - --strimzi-operator-starting-csv=${STRIMZI_OPERATOR_STARTING_CSV}

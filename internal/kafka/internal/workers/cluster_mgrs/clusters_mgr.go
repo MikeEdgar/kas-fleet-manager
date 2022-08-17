@@ -38,8 +38,6 @@ import (
 )
 
 const (
-	observabilityNamespace          = "managed-application-services-observability"
-	observabilityCatalogSourceImage = "quay.io/rhoas/observability-operator-index:v3.0.10"
 	observabilityOperatorGroupName  = "observability-operator-group-name"
 	observabilityCatalogSourceName  = "observability-operator-manifests"
 	observabilitySubscriptionName   = "observability-operator"
@@ -737,13 +735,15 @@ func (c *ClusterManager) buildResourceSet(cluster api.Cluster) types.ResourceSet
 }
 
 func (c *ClusterManager) buildObservabilityNamespaceResource() *k8sCoreV1.Namespace {
+	olmConfig := c.DataplaneClusterConfig.ObservabilityOLMConfig
+
 	return &k8sCoreV1.Namespace{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
 			Kind:       "Namespace",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: observabilityNamespace,
+			Name: olmConfig.Namespace,
 		},
 	}
 }
@@ -759,6 +759,8 @@ func (c *ClusterManager) buildObservatoriumDexSecretResource() *k8sCoreV1.Secret
 		"dexSecret":   observabilityConfig.DexSecret,
 		"dexUsername": observabilityConfig.DexUsername,
 	}
+	olmConfig := c.DataplaneClusterConfig.ObservabilityOLMConfig
+
 	return &k8sCoreV1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: metav1.SchemeGroupVersion.Version,
@@ -766,7 +768,7 @@ func (c *ClusterManager) buildObservatoriumDexSecretResource() *k8sCoreV1.Secret
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      observatoriumDexSecretName,
-			Namespace: observabilityNamespace,
+			Namespace: olmConfig.Namespace,
 		},
 		Type:       k8sCoreV1.SecretTypeOpaque,
 		StringData: stringDataMap,
@@ -786,6 +788,8 @@ func (c *ClusterManager) buildObservatoriumSSOSecretResource() *k8sCoreV1.Secret
 		"logsClientId":           observabilityConfig.LogsClientId,
 		"logsSecret":             observabilityConfig.LogsSecret,
 	}
+	olmConfig := c.DataplaneClusterConfig.ObservabilityOLMConfig
+
 	return &k8sCoreV1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: metav1.SchemeGroupVersion.Version,
@@ -793,13 +797,15 @@ func (c *ClusterManager) buildObservatoriumSSOSecretResource() *k8sCoreV1.Secret
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      observatoriumSSOSecretName,
-			Namespace: observabilityNamespace,
+			Namespace: olmConfig.Namespace,
 		},
 		Type:       k8sCoreV1.SecretTypeOpaque,
 		StringData: stringDataMap,
 	}
 }
 func (c *ClusterManager) buildObservabilityCatalogSourceResource() *v1alpha1.CatalogSource {
+	olmConfig := c.DataplaneClusterConfig.ObservabilityOLMConfig
+
 	return &v1alpha1.CatalogSource{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
@@ -807,16 +813,18 @@ func (c *ClusterManager) buildObservabilityCatalogSourceResource() *v1alpha1.Cat
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      observabilityCatalogSourceName,
-			Namespace: observabilityNamespace,
+			Namespace: olmConfig.Namespace,
 		},
 		Spec: v1alpha1.CatalogSourceSpec{
 			SourceType: v1alpha1.SourceTypeGrpc,
-			Image:      observabilityCatalogSourceImage,
+			Image:      olmConfig.IndexImage,
 		},
 	}
 }
 
 func (c *ClusterManager) buildObservabilityOperatorGroupResource() *v1alpha2.OperatorGroup {
+	olmConfig := c.DataplaneClusterConfig.ObservabilityOLMConfig
+
 	return &v1alpha2.OperatorGroup{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha2.SchemeGroupVersion.String(),
@@ -824,15 +832,17 @@ func (c *ClusterManager) buildObservabilityOperatorGroupResource() *v1alpha2.Ope
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      observabilityOperatorGroupName,
-			Namespace: observabilityNamespace,
+			Namespace: olmConfig.Namespace,
 		},
 		Spec: v1alpha2.OperatorGroupSpec{
-			TargetNamespaces: []string{observabilityNamespace},
+			TargetNamespaces: []string{olmConfig.Namespace},
 		},
 	}
 }
 
 func (c *ClusterManager) buildObservabilitySubscriptionResource() *v1alpha1.Subscription {
+	olmConfig := c.DataplaneClusterConfig.ObservabilityOLMConfig
+
 	return &v1alpha1.Subscription{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
@@ -840,15 +850,16 @@ func (c *ClusterManager) buildObservabilitySubscriptionResource() *v1alpha1.Subs
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      observabilitySubscriptionName,
-			Namespace: observabilityNamespace,
+			Namespace: olmConfig.Namespace,
 		},
 		Spec: &v1alpha1.SubscriptionSpec{
 			CatalogSource:          observabilityCatalogSourceName,
-			Channel:                "alpha",
-			CatalogSourceNamespace: observabilityNamespace,
-			StartingCSV:            "observability-operator.v3.0.10",
+			Channel:                olmConfig.SubscriptionChannel,
+			CatalogSourceNamespace: olmConfig.Namespace,
+			StartingCSV:            olmConfig.SubscriptionStartingCSV,
 			InstallPlanApproval:    v1alpha1.ApprovalAutomatic,
-			Package:                observabilitySubscriptionName,
+			Package:                olmConfig.Package,
+			Config:                 olmConfig.SubscriptionConfig,
 		},
 	}
 }

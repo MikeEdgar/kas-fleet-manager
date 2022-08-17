@@ -53,6 +53,7 @@ type DataplaneClusterConfig struct {
 	EnableDynamicScaleDownManagerScaleDownTrigger bool
 	Kubeconfig                                    string
 	RawKubernetesConfig                           *clientcmdapi.Config
+	ObservabilityOLMConfig                        OperatorInstallationConfig
 	StrimziOperatorOLMConfig                      OperatorInstallationConfig
 	KasFleetshardOperatorOLMConfig                OperatorInstallationConfig
 	DynamicScalingConfig                          DynamicScalingConfig
@@ -117,6 +118,15 @@ func NewDataplaneClusterConfig() *DataplaneClusterConfig {
 		EnableDynamicScaleUpManagerScaleUpTrigger:     true,
 		EnableDynamicScaleDownManagerScaleDownTrigger: true,
 		Kubeconfig: getDefaultKubeconfig(),
+		ObservabilityOLMConfig: OperatorInstallationConfig{
+			IndexImage:              "quay.io/rhoas/observability-operator-index:v3.0.14",
+			Namespace:               "managed-application-services-observability",
+			SubscriptionChannel:     "alpha",
+			Package:                 "observability-operator",
+			SubscriptionStartingCSV: "observability-operator.v3.0.14",
+			SubscriptionConfigFile:  "config/observability-operator-subscription-spec-config.yaml",
+			SubscriptionConfig:      nil,
+		},
 		StrimziOperatorOLMConfig: OperatorInstallationConfig{
 			IndexImage:             defaultStrimziOperatorIndexImage,
 			Namespace:              constants.StrimziOperatorNamespace,
@@ -321,12 +331,21 @@ func (c *DataplaneClusterConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.EnableReadyDataPlaneClustersReconcile, "enable-ready-dataplane-clusters-reconcile", c.EnableReadyDataPlaneClustersReconcile, "Enables reconciliation for data plane clusters in the 'Ready' state")
 	fs.BoolVar(&c.EnableKafkaSreIdentityProviderConfiguration, "enable-kafka-sre-identity-provider-configuration", c.EnableKafkaSreIdentityProviderConfiguration, "Enable the configuration of Kafka_SRE identity provider on the data plane cluster")
 	fs.StringVar(&c.Kubeconfig, "kubeconfig", c.Kubeconfig, "A path to kubeconfig file used for communication with standalone clusters")
+
+	fs.StringVar(&c.ObservabilityOLMConfig.IndexImage, "observability-operator-index-image", c.ObservabilityOLMConfig.IndexImage, "Observability operator index image")
+	fs.StringVar(&c.ObservabilityOLMConfig.Namespace, "observability-operator-namespace", c.ObservabilityOLMConfig.Namespace, "Observability operator namespace")
+	fs.StringVar(&c.ObservabilityOLMConfig.Package, "observability-operator-package", c.ObservabilityOLMConfig.Package, "Observability operator package")
+	fs.StringVar(&c.ObservabilityOLMConfig.SubscriptionStartingCSV, "observability-operator-starting-csv", c.ObservabilityOLMConfig.SubscriptionStartingCSV, "Observability operator subscription starting CSV")
+	fs.StringVar(&c.ObservabilityOLMConfig.SubscriptionChannel, "observability-operator-sub-channel", c.ObservabilityOLMConfig.SubscriptionChannel, "Observability operator subscription channel")
+	fs.StringVar(&c.ObservabilityOLMConfig.SubscriptionConfigFile, "observability-operator-subscription-config-file", c.ObservabilityOLMConfig.SubscriptionConfigFile, "Observability operator subscription config. This is applied for standalone clusters only. The configuration must be of type https://pkg.go.dev/github.com/operator-framework/api@v0.3.25/pkg/operators/v1alpha1?utm_source=gopls#SubscriptionConfig")
+
 	fs.StringVar(&c.StrimziOperatorOLMConfig.IndexImage, "strimzi-operator-index-image", c.StrimziOperatorOLMConfig.IndexImage, "Strimzi operator index image")
 	fs.StringVar(&c.StrimziOperatorOLMConfig.Namespace, "strimzi-operator-namespace", c.StrimziOperatorOLMConfig.Namespace, "Strimzi operator namespace")
 	fs.StringVar(&c.StrimziOperatorOLMConfig.Package, "strimzi-operator-package", c.StrimziOperatorOLMConfig.Package, "Strimzi operator package")
 	fs.StringVar(&c.StrimziOperatorOLMConfig.SubscriptionStartingCSV, "strimzi-operator-starting-csv", c.StrimziOperatorOLMConfig.SubscriptionStartingCSV, "Strimzi operator subscription starting CSV")
 	fs.StringVar(&c.StrimziOperatorOLMConfig.SubscriptionChannel, "strimzi-operator-sub-channel", c.StrimziOperatorOLMConfig.SubscriptionChannel, "Strimzi operator subscription channel")
 	fs.StringVar(&c.StrimziOperatorOLMConfig.SubscriptionConfigFile, "strimzi-operator-subscription-config-file", c.StrimziOperatorOLMConfig.SubscriptionConfigFile, "Strimzi operator subscription config. This is applied for standalone clusters only. The configuration must be of type https://pkg.go.dev/github.com/operator-framework/api@v0.3.25/pkg/operators/v1alpha1?utm_source=gopls#SubscriptionConfig")
+
 	fs.StringVar(&c.KasFleetshardOperatorOLMConfig.IndexImage, "kas-fleetshard-operator-index-image", c.KasFleetshardOperatorOLMConfig.IndexImage, "kas-fleetshard operator index image")
 	fs.StringVar(&c.KasFleetshardOperatorOLMConfig.Namespace, "kas-fleetshard-operator-namespace", c.KasFleetshardOperatorOLMConfig.Namespace, "kas-fleetshard operator namespace")
 	fs.StringVar(&c.KasFleetshardOperatorOLMConfig.Package, "kas-fleetshard-operator-package", c.KasFleetshardOperatorOLMConfig.Package, "kas-fleetshard operator package")
@@ -387,6 +406,15 @@ func (c *DataplaneClusterConfig) ReadFiles() error {
 			validationErr := validateClusterIsInKubeconfigContext(*c.RawKubernetesConfig, cluster)
 			if validationErr != nil {
 				return validationErr
+			}
+		}
+
+		err = readOperatorsSubscriptionConfigFile(c.ObservabilityOLMConfig.SubscriptionConfigFile, &c.ObservabilityOLMConfig.SubscriptionConfig)
+		if err != nil {
+			if os.IsNotExist(err) {
+				logger.Logger.Warningf("Specified Observability operator subscription config file %s does not exist. Default configuration will be used", c.ObservabilityOLMConfig.SubscriptionConfigFile)
+			} else {
+				return err
 			}
 		}
 
