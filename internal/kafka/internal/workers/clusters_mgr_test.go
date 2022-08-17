@@ -17,6 +17,7 @@ import (
 	"github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/internal/kafka/internal/services"
 
 	"github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/pkg/api"
+	namespaceConstants "github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/pkg/constants"
 	apiErrors "github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/pkg/errors"
 
 	"github.com/onsi/gomega"
@@ -2215,6 +2216,7 @@ func buildObservabilityConfig() observatorium.ObservabilityConfiguration {
 func buildResourceSet(observabilityConfig observatorium.ObservabilityConfiguration, clusterConfig config.DataplaneClusterConfig, ingressDNS string, cluster *api.Cluster) (types.ResourceSet, error) {
 	strimziNamespace := strimziAddonNamespace
 	kasFleetshardNamespace := kasFleetshardAddonNamespace
+	observabilityNamespace := namespaceConstants.ObservabilityNamespace
 
 	resources := []interface{}{
 		&userv1.Group{
@@ -2339,7 +2341,7 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 			},
 			Spec: v1alpha1.CatalogSourceSpec{
 				SourceType: v1alpha1.SourceTypeGrpc,
-				Image:      observabilityCatalogSourceImage,
+				Image:      clusterConfig.ObservabilityOLMConfig.IndexImage,
 			},
 		},
 		&v1alpha2.OperatorGroup{
@@ -2366,9 +2368,9 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 			},
 			Spec: &v1alpha1.SubscriptionSpec{
 				CatalogSource:          observabilityCatalogSourceName,
-				Channel:                "alpha",
+				Channel:                clusterConfig.ObservabilityOLMConfig.SubscriptionChannel,
 				CatalogSourceNamespace: observabilityNamespace,
-				StartingCSV:            "observability-operator.v3.0.10",
+				StartingCSV:            clusterConfig.ObservabilityOLMConfig.SubscriptionStartingCSV,
 				InstallPlanApproval:    v1alpha1.ApprovalAutomatic,
 				Package:                observabilitySubscriptionName,
 			},
