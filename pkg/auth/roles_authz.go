@@ -26,6 +26,7 @@ type RoleConfig []RolesConfiguration
 
 // AdminRoleAuthZConfig is the configuration of the role authZ middleware.
 type AdminRoleAuthZConfig struct {
+	EnableRoleCheck bool
 	RolesConfigFile string
 	RolesConfig     RoleConfig
 }
@@ -39,6 +40,8 @@ func NewAdminAuthZConfig() *AdminRoleAuthZConfig {
 
 // AddFlags adds required flags for the role authZ configuration.
 func (c *AdminRoleAuthZConfig) AddFlags(fs *pflag.FlagSet) {
+	fs.BoolVar(&c.EnableRoleCheck, "enable-admin-authz-role-check", true,
+		"Flag to enable or disable Admin API authZ role check")
 	fs.StringVar(&c.RolesConfigFile, "admin-authz-config-file", c.RolesConfigFile,
 		"Admin API authZ configuration file containing list of required role per API method")
 }

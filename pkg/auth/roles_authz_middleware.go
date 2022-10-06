@@ -21,14 +21,16 @@ type RolesAuthorizationMiddleware interface {
 }
 
 type rolesAuthMiddleware struct {
-	roleMapping map[string][]string
+	enableRoleCheck bool
+	roleMapping     map[string][]string
 }
 
 var _ RolesAuthorizationMiddleware = &rolesAuthMiddleware{}
 
 func NewRolesAuthzMiddleware(config *AdminRoleAuthZConfig) RolesAuthorizationMiddleware {
 	return &rolesAuthMiddleware{
-		roleMapping: config.GetRoleMapping(),
+		enableRoleCheck: config.EnableRoleCheck,
+		roleMapping:     config.GetRoleMapping(),
 	}
 }
 
@@ -56,6 +58,15 @@ func (m *rolesAuthMiddleware) RequireRealmRole(roleName string, code errors.Serv
 func (m *rolesAuthMiddleware) RequireRolesForMethods(code errors.ServiceErrorCode) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			ctx := request.Context()
+
+			if !m.enableRoleCheck {
+				ctx = SetIsAdminContext(ctx, true)
+				request = request.WithContext(ctx)
+				next.ServeHTTP(writer, request)
+				return
+			}
+
 			serviceErr := errors.New(code, "")
 			method := request.Method
 			allowedRoles, ok := m.roleMapping[method]
@@ -66,7 +77,6 @@ func (m *rolesAuthMiddleware) RequireRolesForMethods(code errors.ServiceErrorCod
 				return
 			}
 
-			ctx := request.Context()
 			claims, err := GetClaimsFromContext(ctx)
 			if err != nil {
 				shared.HandleError(request, writer, serviceErr)
