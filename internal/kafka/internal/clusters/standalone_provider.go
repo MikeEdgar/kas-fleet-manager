@@ -77,6 +77,7 @@ func (s *StandaloneProvider) InstallStrimzi(clusterSpec *types.ClusterSpec) (boo
 		Resources: []interface{}{
 			s.buildStrimziOperatorNamespace(),
 			s.buildStrimziOperatorCatalogSource(),
+			s.buildStrimziOperatorCommonCatalogSource(),
 			s.buildStrimziOperatorOperatorGroup(),
 			s.buildStrimziOperatorSubscription(),
 		},
@@ -125,6 +126,30 @@ func (s *StandaloneProvider) buildStrimziOperatorCatalogSource() *operatorsv1alp
 		Spec: operatorsv1alpha1.CatalogSourceSpec{
 			SourceType: operatorsv1alpha1.SourceTypeGrpc,
 			Image:      strimziOLMConfig.IndexImage,
+			Secrets:    secrets,
+		},
+	}
+}
+
+func (s *StandaloneProvider) buildStrimziOperatorCommonCatalogSource() *operatorsv1alpha1.CatalogSource {
+	strimziOLMConfig := s.dataplaneClusterConfig.StrimziOperatorOLMConfig
+	var secrets []string
+	if s.dataplaneClusterConfig.ImagePullDockerConfigContent != "" {
+		secrets = append(secrets, constants.ImagePullSecretName)
+	}
+	return &operatorsv1alpha1.CatalogSource{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: operatorsv1alpha1.SchemeGroupVersion.String(),
+			Kind:       operatorsv1alpha1.CatalogSourceKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mas-resources-cs",
+			Namespace: strimziOLMConfig.Namespace,
+			Labels:    StrimziOperatorCommonLabels(),
+		},
+		Spec: operatorsv1alpha1.CatalogSourceSpec{
+			SourceType: operatorsv1alpha1.SourceTypeGrpc,
+			Image:      "quay.io/medgar/mas-resource-bundle-index:latest",
 			Secrets:    secrets,
 		},
 	}

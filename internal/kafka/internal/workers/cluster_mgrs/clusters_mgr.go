@@ -41,7 +41,7 @@ const (
 	observabilityNamespace          = constants.ObservabilityOperatorNamespace
 	observabilityOperatorGroupName  = "observability-operator-group-name"
 	observabilityCatalogSourceName  = "observability-operator-manifests"
-	observabilitySubscriptionName   = "observability-operator"
+	observabilitySubscriptionName   = "kas-observability-operator"
 	observatoriumDexSecretName      = "observatorium-configuration-dex"
 	observatoriumSSOSecretName      = "observatorium-configuration-red-hat-sso"
 	syncsetName                     = "ext-managedservice-cluster-mgr"
@@ -762,6 +762,12 @@ func (c *ClusterManager) buildResourceSet(cluster api.Cluster) types.ResourceSet
 			c.buildDedicatedReaderClusterRoleBindingResource(),
 			c.buildKafkaSREGroupResource(),
 			c.buildKafkaSreClusterRoleBindingResource(),
+			// Observability common/CRD bundle installation
+			c.buildObservabilityCommonNamespaceResource(),
+			c.buildObservabilityCommonCatalogSourceResource(),
+			c.buildObservabilityCommonOperatorGroupResource(),
+			c.buildObservabilityCommonSubscriptionResource(),
+			// Observability installation
 			c.buildObservabilityNamespaceResource(),
 			c.buildObservatoriumDexSecretResource(),
 			c.buildObservatoriumSSOSecretResource(),
@@ -813,6 +819,76 @@ func (c *ClusterManager) buildResourceSet(cluster api.Cluster) types.ResourceSet
 	return types.ResourceSet{
 		Name:      syncsetName,
 		Resources: r,
+	}
+}
+
+func (c *ClusterManager) buildObservabilityCommonNamespaceResource() *k8sCoreV1.Namespace {
+	return &k8sCoreV1.Namespace{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+			Kind:       "Namespace",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "managed-application-services-observability-common",
+		},
+	}
+}
+
+func (c *ClusterManager) buildObservabilityCommonCatalogSourceResource() *v1alpha1.CatalogSource {
+	var secrets []string
+	if c.DataplaneClusterConfig.ImagePullDockerConfigContent != "" {
+		secrets = append(secrets, kafkaConstants.ImagePullSecretName)
+	}
+	return &v1alpha1.CatalogSource{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			Kind:       "CatalogSource",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mas-resources-cs",
+			Namespace: "managed-application-services-observability-common",
+		},
+		Spec: v1alpha1.CatalogSourceSpec{
+			SourceType: v1alpha1.SourceTypeGrpc,
+			Image:      "quay.io/medgar/mas-resource-bundle-index:latest",
+			Secrets:    secrets,
+			Priority:   100,
+		},
+	}
+}
+
+func (c *ClusterManager) buildObservabilityCommonOperatorGroupResource() *v1alpha2.OperatorGroup {
+	return &v1alpha2.OperatorGroup{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha2.SchemeGroupVersion.String(),
+			Kind:       "OperatorGroup",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mas-observability-common-og",
+			Namespace: "managed-application-services-observability-common",
+		},
+		//Spec.TargetNamespaces intentionally not set, which means "select all namespaces"
+		Spec: v1alpha2.OperatorGroupSpec{},
+	}
+}
+
+func (c *ClusterManager) buildObservabilityCommonSubscriptionResource() *v1alpha1.Subscription {
+	return &v1alpha1.Subscription{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			Kind:       "Subscription",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "observability-resources-sub",
+			Namespace: "managed-application-services-observability-common",
+		},
+		Spec: &v1alpha1.SubscriptionSpec{
+			CatalogSource:          "mas-resources-cs",
+			Channel:                "alpha",
+			CatalogSourceNamespace: "managed-application-services-observability-common",
+			InstallPlanApproval:    v1alpha1.ApprovalAutomatic,
+			Package:                "mas-observability-resources",
+		},
 	}
 }
 
@@ -879,6 +955,7 @@ func (c *ClusterManager) buildObservatoriumSSOSecretResource() *k8sCoreV1.Secret
 		StringData: stringDataMap,
 	}
 }
+
 func (c *ClusterManager) buildObservabilityCatalogSourceResource() *v1alpha1.CatalogSource {
 	return &v1alpha1.CatalogSource{
 		TypeMeta: metav1.TypeMeta{
