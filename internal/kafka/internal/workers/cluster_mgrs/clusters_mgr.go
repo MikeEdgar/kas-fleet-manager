@@ -1006,6 +1006,27 @@ func (c *ClusterManager) buildObservabilitySubscriptionResource() *v1alpha1.Subs
 			StartingCSV:            c.DataplaneClusterConfig.ObservabilityOperatorOLMConfig.SubscriptionStartingCSV,
 			InstallPlanApproval:    v1alpha1.ApprovalAutomatic,
 			Package:                observabilitySubscriptionName,
+			Config: &v1alpha1.SubscriptionConfig{
+				Env: []k8sCoreV1.EnvVar{
+					{
+						Name:  "WATCH_NAMESPACE",
+						Value: observabilityNamespace,
+					},
+					{
+						Name: "DEFAULT_CONFIG_SELECTOR",
+						Value: `{
+							"matchExpressions": [{
+								"key": "configures",
+								"operator": "In",
+								"values": [
+									"kas-observability-operator",
+									"observability-operator"
+								]
+							}]
+						}`,
+					},
+				},
+			},
 		},
 	}
 }
