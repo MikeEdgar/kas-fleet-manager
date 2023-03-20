@@ -2089,7 +2089,7 @@ func Test_clusterService_ApplyResources(t *testing.T) {
 	}
 }
 
-func Test_clusterService_InstallStrimzi(t *testing.T) {
+/* func Test_clusterService_InstallStrimzi(t *testing.T) {
 	type fields struct {
 		connectionFactory      *db.ConnectionFactory
 		clusterProviderFactory clusters.ProviderFactory
@@ -2200,7 +2200,7 @@ func Test_clusterService_InstallStrimzi(t *testing.T) {
 			g.Expect(got).To(gomega.Equal(tt.want))
 		})
 	}
-}
+} */
 
 func Test_clusterService_ClusterLogging(t *testing.T) {
 	type fields struct {

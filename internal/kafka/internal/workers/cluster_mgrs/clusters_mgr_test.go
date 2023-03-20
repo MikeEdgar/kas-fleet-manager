@@ -20,8 +20,6 @@ import (
 	"github.com/onsi/gomega"
 	authv1 "github.com/openshift/api/authorization/v1"
 	userv1 "github.com/openshift/api/user/v1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha2"
 	errors "github.com/pkg/errors"
 	k8sCoreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1847,7 +1845,7 @@ func TestClusterManager_reconcileClusterStatus(t *testing.T) {
 	}
 }
 
-func TestClusterManager_reconcileStrimziOperator(t *testing.T) {
+/* func TestClusterManager_reconcileStrimziOperator(t *testing.T) {
 	type fields struct {
 		clusterService services.ClusterService
 	}
@@ -1899,7 +1897,7 @@ func TestClusterManager_reconcileStrimziOperator(t *testing.T) {
 			g.Expect(err != nil).To(gomega.Equal(tt.wantErr))
 		})
 	}
-}
+} */
 
 func TestClusterManager_reconcileClusterLoggingOperator(t *testing.T) {
 	type fields struct {
@@ -2242,7 +2240,7 @@ func buildObservabilityConfig() observatorium.ObservabilityConfiguration {
 }
 
 func buildResourceSet(observabilityConfig observatorium.ObservabilityConfiguration, clusterConfig config.DataplaneClusterConfig, ingressDNS string, cluster *api.Cluster) (types.ResourceSet, error) {
-	strimziNamespace := strimziAddonNamespace
+	//strimziNamespace := strimziAddonNamespace
 	kasFleetshardNamespace := kasFleetshardAddonNamespace
 
 	var resources []interface{}
@@ -2312,16 +2310,16 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 		)
 	}
 
-	resources = append(resources,
-		&k8sCoreV1.Namespace{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Namespace",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: observabilityNamespace,
-			},
-		})
+	// resources = append(resources,
+	// 	&k8sCoreV1.Namespace{
+	// 		TypeMeta: metav1.TypeMeta{
+	// 			APIVersion: "v1",
+	// 			Kind:       "Namespace",
+	// 		},
+	// 		ObjectMeta: metav1.ObjectMeta{
+	// 			Name: observabilityNamespace,
+	// 		},
+	// 	})
 
 	if observabilityConfig.ObservabilityCloudWatchLoggingConfig.CloudwatchLoggingEnabled {
 		cloudwatchLoggingSecret := &k8sCoreV1.Secret{
@@ -2355,27 +2353,7 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 		resources = append(resources, cloudwatchLoggingSecret)
 	}
 
-	resources = append(resources,
-		&k8sCoreV1.Secret{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-				Kind:       "Secret",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      observatoriumDexSecretName,
-				Namespace: observabilityNamespace,
-			},
-			Type: k8sCoreV1.SecretTypeOpaque,
-			StringData: map[string]string{
-				"authType":    observatorium.AuthTypeDex,
-				"dexPassword": observabilityConfig.DexPassword,
-				"dexSecret":   observabilityConfig.DexSecret,
-				"dexUsername": observabilityConfig.DexUsername,
-				"gateway":     observabilityConfig.ObservatoriumGateway,
-				"dexUrl":      observabilityConfig.DexUrl,
-				"tenant":      observabilityConfig.ObservatoriumTenant,
-			},
-		},
+	/* resources = append(resources,
 		&k8sCoreV1.Secret{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
@@ -2396,50 +2374,25 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 				"metricsSecret":          "",
 			},
 		},
-		&v1alpha1.CatalogSource{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "operators.coreos.com/v1alpha1",
-				Kind:       "CatalogSource",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      observabilityCatalogSourceName,
-				Namespace: observabilityNamespace,
-			},
-			Spec: v1alpha1.CatalogSourceSpec{
-				SourceType: v1alpha1.SourceTypeGrpc,
-				Image:      clusterConfig.ObservabilityOperatorOLMConfig.IndexImage,
-			},
+		Type: k8sCoreV1.SecretTypeOpaque,
+		StringData: map[string]string{
+			"authType":    observatorium.AuthTypeDex,
+			"dexPassword": observabilityConfig.DexPassword,
+			"dexSecret":   observabilityConfig.DexSecret,
+			"dexUsername": observabilityConfig.DexUsername,
+			"gateway":     observabilityConfig.ObservatoriumGateway,
+			"dexUrl":      observabilityConfig.DexUrl,
+			"tenant":      observabilityConfig.ObservatoriumTenant,
 		},
-		&v1alpha2.OperatorGroup{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "operators.coreos.com/v1alpha2",
-				Kind:       "OperatorGroup",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      observabilityOperatorGroupName,
-				Namespace: observabilityNamespace,
-			},
-			Spec: v1alpha2.OperatorGroupSpec{
-				TargetNamespaces: []string{observabilityNamespace},
-			},
+	},
+	&k8sCoreV1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+			Kind:       "Secret",
 		},
-		&v1alpha1.Subscription{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "operators.coreos.com/v1alpha1",
-				Kind:       "Subscription",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      observabilitySubscriptionName,
-				Namespace: observabilityNamespace,
-			},
-			Spec: &v1alpha1.SubscriptionSpec{
-				CatalogSource:          observabilityCatalogSourceName,
-				Channel:                "alpha",
-				CatalogSourceNamespace: observabilityNamespace,
-				StartingCSV:            clusterConfig.ObservabilityOperatorOLMConfig.SubscriptionStartingCSV,
-				InstallPlanApproval:    v1alpha1.ApprovalAutomatic,
-				Package:                observabilitySubscriptionName,
-			},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      observatoriumSSOSecretName,
+			Namespace: observabilityNamespace,
 		},
 	)
 
@@ -2459,34 +2412,34 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 				"issuer_url":    "dummy",
 			},
 		})
-	}
+	}*/
 
 	if cluster.ProviderType == api.ClusterProviderStandalone {
-		strimziNamespace = clusterConfig.StrimziOperatorOLMConfig.Namespace
+		//strimziNamespace = clusterConfig.StrimziOperatorOLMConfig.Namespace
 		kasFleetshardNamespace = clusterConfig.KasFleetshardOperatorOLMConfig.Namespace
-		resources = append(resources, &k8sCoreV1.Namespace{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-				Kind:       "Namespace",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:   strimziNamespace,
-				Labels: clusters.StrimziOperatorCommonLabels(),
-			},
-		}, &k8sCoreV1.Namespace{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-				Kind:       "Namespace",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: kasFleetshardNamespace,
-			},
-		})
+		resources = append(resources, /* &k8sCoreV1.Namespace{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+					Kind:       "Namespace",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   strimziNamespace,
+					Labels: clusters.StrimziOperatorCommonLabels(),
+				},
+			}, */&k8sCoreV1.Namespace{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+					Kind:       "Namespace",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: kasFleetshardNamespace,
+				},
+			})
 	}
 
 	if clusterConfig.ImagePullDockerConfigContent != "" {
 		resources = append(resources,
-			&k8sCoreV1.Secret{
+			/* &k8sCoreV1.Secret{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
 					Kind:       "Secret",
@@ -2499,7 +2452,7 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 				Data: map[string][]byte{
 					k8sCoreV1.DockerConfigJsonKey: []byte(clusterConfig.ImagePullDockerConfigContent),
 				},
-			},
+			}, */
 			&k8sCoreV1.Secret{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
@@ -2514,7 +2467,7 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 					k8sCoreV1.DockerConfigJsonKey: []byte(clusterConfig.ImagePullDockerConfigContent),
 				},
 			},
-			&k8sCoreV1.Secret{
+			/* &k8sCoreV1.Secret{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
 					Kind:       "Secret",
@@ -2527,7 +2480,7 @@ func buildResourceSet(observabilityConfig observatorium.ObservabilityConfigurati
 				Data: map[string][]byte{
 					k8sCoreV1.DockerConfigJsonKey: []byte(clusterConfig.ImagePullDockerConfigContent),
 				},
-			})
+			} */)
 	}
 
 	return types.ResourceSet{

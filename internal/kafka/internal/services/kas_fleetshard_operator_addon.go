@@ -26,8 +26,9 @@ const (
 	// parameter names for the control plane url
 	kasFleetshardOperatorParamControlPlaneBaseURL = "control-plane-url"
 	//parameter names for fleetshardoperator synchronizer
-	kasFleetshardOperatorParamPollinterval   = "poll-interval"
-	kasFleetshardOperatorParamResyncInterval = "resync-interval"
+	kasFleetshardOperatorParamPollinterval    = "poll-interval"
+	kasFleetshardOperatorParamResyncInterval  = "resync-interval"
+	kasFleetshardOperatorParamImagePullSecret = "rhoas-image-pull-secret"
 )
 
 type ParameterList []types.Parameter
@@ -61,12 +62,13 @@ func NewKasFleetshardOperatorAddon(o kasFleetshardOperatorAddon) KasFleetshardOp
 
 type kasFleetshardOperatorAddon struct {
 	di.Inject
-	SsoService          sso.KafkaKeycloakService
-	ProviderFactory     clusters.ProviderFactory
-	ServerConfig        *server.ServerConfig
-	KasFleetShardConfig *config.KasFleetshardConfig
-	OCMConfig           *ocm.OCMConfig
-	KeycloakConfig      *keycloak.KeycloakConfig
+	SsoService             sso.KafkaKeycloakService
+	ProviderFactory        clusters.ProviderFactory
+	ServerConfig           *server.ServerConfig
+	KasFleetShardConfig    *config.KasFleetshardConfig
+	OCMConfig              *ocm.OCMConfig
+	KeycloakConfig         *keycloak.KeycloakConfig
+	DataplaneClusterConfig *config.DataplaneClusterConfig
 }
 
 func (o *kasFleetshardOperatorAddon) Provision(cluster api.Cluster) (bool, ParameterList, *errors.ServiceError) {
@@ -161,7 +163,6 @@ func (o *kasFleetshardOperatorAddon) buildAddonParams(cluster *api.Cluster, serv
 	}
 
 	p := []types.Parameter{
-
 		{
 			Id:    kasFleetshardOperatorParamMasSSOBaseUrl,
 			Value: o.SsoService.GetRealmConfig().ValidIssuerURI,
@@ -189,6 +190,10 @@ func (o *kasFleetshardOperatorAddon) buildAddonParams(cluster *api.Cluster, serv
 		{
 			Id:    kasFleetshardOperatorParamResyncInterval,
 			Value: o.KasFleetShardConfig.ResyncInterval,
+		},
+		{
+			Id:    kasFleetshardOperatorParamImagePullSecret,
+			Value: o.DataplaneClusterConfig.ImagePullDockerConfigContent,
 		},
 	}
 	return p

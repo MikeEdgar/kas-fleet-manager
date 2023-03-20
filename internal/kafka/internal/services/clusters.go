@@ -77,8 +77,10 @@ type ClusterService interface {
 	ConfigureAndSaveIdentityProvider(cluster *api.Cluster, identityProviderInfo types.IdentityProviderInfo) (*api.Cluster, *apiErrors.ServiceError)
 	ApplyResources(cluster *api.Cluster, resources types.ResourceSet) *apiErrors.ServiceError
 	RemoveResources(cluster *api.Cluster, syncSetName string) *apiErrors.ServiceError
+
 	// Install the strimzi operator in a given cluster
-	InstallStrimzi(cluster *api.Cluster) (bool, *apiErrors.ServiceError)
+	//InstallStrimzi(cluster *api.Cluster) (bool, *apiErrors.ServiceError)
+
 	// Install the cluster logging operator for a given cluster
 	InstallClusterLogging(cluster *api.Cluster, params []types.Parameter) (bool, *apiErrors.ServiceError)
 	CheckStrimziVersionReady(cluster *api.Cluster, strimziVersion string) (bool, error)
@@ -701,7 +703,7 @@ func (c clusterService) RemoveResources(cluster *api.Cluster, syncSetName string
 	return nil
 }
 
-func (c clusterService) InstallStrimzi(cluster *api.Cluster) (bool, *apiErrors.ServiceError) {
+/* func (c clusterService) InstallStrimzi(cluster *api.Cluster) (bool, *apiErrors.ServiceError) {
 	p, err := c.providerFactory.GetProvider(cluster.ProviderType)
 	if err != nil {
 		return false, apiErrors.NewWithCause(apiErrors.ErrorGeneral, err, "failed to get provider implementation")
@@ -711,7 +713,7 @@ func (c clusterService) InstallStrimzi(cluster *api.Cluster) (bool, *apiErrors.S
 	} else {
 		return ready, nil
 	}
-}
+} */
 
 func (c clusterService) InstallClusterLogging(cluster *api.Cluster, params []types.Parameter) (bool, *apiErrors.ServiceError) {
 	p, err := c.providerFactory.GetProvider(cluster.ProviderType)

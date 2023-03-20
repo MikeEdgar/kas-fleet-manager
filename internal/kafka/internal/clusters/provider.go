@@ -35,8 +35,10 @@ type Provider interface {
 	GetCloudProviders() (*types.CloudProviderInfoList, error)
 	// GetCloudProviderRegions Get the regions information for the given cloud provider from the cluster provider
 	GetCloudProviderRegions(providerInf types.CloudProviderInfo) (*types.CloudProviderRegionInfoList, error)
+
 	// Install the strimzi operator in a given cluster
-	InstallStrimzi(clusterSpec *types.ClusterSpec) (bool, error)
+	//InstallStrimzi(clusterSpec *types.ClusterSpec) (bool, error)
+
 	// Install the cluster logging operator for a given cluster
 	InstallClusterLogging(clusterSpec *types.ClusterSpec, params []types.Parameter) (bool, error)
 	// Install the cluster logging operator for a given cluster

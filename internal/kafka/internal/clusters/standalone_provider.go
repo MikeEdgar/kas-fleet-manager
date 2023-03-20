@@ -238,7 +238,11 @@ func (s *StandaloneProvider) buildKASFleetShardOperatorOperatorGroup() *operator
 			Namespace: kasFleetshardOLMConfig.Namespace,
 		},
 		//Spec.TargetNamespaces intentionally not set, which means "select all namespaces"
-		Spec: operatorsv1alpha2.OperatorGroupSpec{},
+		Spec: operatorsv1alpha2.OperatorGroupSpec{
+			TargetNamespaces: []string{
+				kasFleetshardOLMConfig.Namespace,
+			},
+		},
 	}
 }
 

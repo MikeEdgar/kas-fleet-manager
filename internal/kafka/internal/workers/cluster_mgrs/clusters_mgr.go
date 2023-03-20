@@ -15,7 +15,6 @@ import (
 	"github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/pkg/constants"
 	"github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/pkg/logger"
 
-	"strings"
 	"sync"
 
 	"github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/internal/kafka/internal/services"
@@ -29,8 +28,6 @@ import (
 
 	authv1 "github.com/openshift/api/authorization/v1"
 	userv1 "github.com/openshift/api/user/v1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha2"
 	"github.com/pkg/errors"
 
 	k8sCoreV1 "k8s.io/api/core/v1"
@@ -38,15 +35,15 @@ import (
 )
 
 const (
-	observabilityNamespace          = constants.ObservabilityOperatorNamespace
+	/* observabilityNamespace          = constants.ObservabilityOperatorNamespace
 	observabilityOperatorGroupName  = "observability-operator-group-name"
 	observabilityCatalogSourceName  = "observability-operator-manifests"
 	observabilitySubscriptionName   = "observability-operator"
 	observatoriumDexSecretName      = "observatorium-configuration-dex"
-	observatoriumSSOSecretName      = "observatorium-configuration-red-hat-sso"
-	syncsetName                     = "ext-managedservice-cluster-mgr"
-	strimziAddonNamespace           = constants.StrimziOperatorNamespace
-	strimziQEAddonNamespace         = "redhat-managed-kafka-operator-qe"
+	observatoriumSSOSecretName      = "observatorium-configuration-red-hat-sso" */
+	syncsetName = "ext-managedservice-cluster-mgr"
+	/* strimziAddonNamespace           = constants.StrimziOperatorNamespace
+	strimziQEAddonNamespace         = "redhat-managed-kafka-operator-qe" */
 	kasFleetshardAddonNamespace     = constants.KASFleetShardOperatorNamespace
 	kasFleetshardQEAddonNamespace   = "redhat-kas-fleetshard-operator-qe"
 	openIDIdentityProviderName      = "Kafka_SRE"
@@ -612,10 +609,10 @@ func (c *ClusterManager) reconcileClusterStatus(cluster *api.Cluster) (*api.Clus
 }
 
 func (c *ClusterManager) reconcileAddonOperator(provisionedCluster api.Cluster) (bool, error) {
-	strimziOperatorIsReady, err := c.reconcileStrimziOperator(provisionedCluster)
+	/* strimziOperatorIsReady, err := c.reconcileStrimziOperator(provisionedCluster)
 	if err != nil {
 		return false, err
-	}
+	} */
 
 	clusterLoggingOperatorIsReady := false
 
@@ -641,7 +638,7 @@ func (c *ClusterManager) reconcileAddonOperator(provisionedCluster api.Cluster) 
 		}
 	}
 
-	if strimziOperatorIsReady && kasFleetshardOperatorIsReady && (clusterLoggingOperatorIsReady || c.OCMConfig.ClusterLoggingOperatorAddonID == "") {
+	if /* strimziOperatorIsReady && */ kasFleetshardOperatorIsReady && (clusterLoggingOperatorIsReady || c.OCMConfig.ClusterLoggingOperatorAddonID == "") {
 		return true, nil
 	}
 
@@ -649,14 +646,14 @@ func (c *ClusterManager) reconcileAddonOperator(provisionedCluster api.Cluster) 
 }
 
 // reconcileStrimziOperator installs the Strimzi operator on a provisioned clusters
-func (c *ClusterManager) reconcileStrimziOperator(provisionedCluster api.Cluster) (bool, error) {
+/* func (c *ClusterManager) reconcileStrimziOperator(provisionedCluster api.Cluster) (bool, error) {
 	ready, err := c.ClusterService.InstallStrimzi(&provisionedCluster)
 	if err != nil {
 		return false, err
 	}
 	glog.V(5).Infof("ready status of strimzi installation on cluster %s is %t", provisionedCluster.ClusterID, ready)
 	return ready, nil
-}
+} */
 
 // reconcileClusterLoggingOperator installs the cluster logging operator on provisioned clusters
 func (c *ClusterManager) reconcileClusterLoggingOperator(provisionedCluster api.Cluster) (bool, error) {
@@ -757,30 +754,30 @@ func (c *ClusterManager) buildResourceSet(cluster api.Cluster) types.ResourceSet
 		)
 	}
 
-	r = append(r, c.buildObservabilityNamespaceResource())
+	//r = append(r, c.buildObservabilityNamespaceResource())
 
-	if c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.CloudwatchLoggingEnabled {
-		if cluster.ClusterType == api.EnterpriseDataPlaneClusterType.String() {
-			r = append(r,
-				c.buildObservabilityEnterpriseCloudwatchLoggingCredentialsSecret(cluster.OrganizationID, cluster.ClusterID),
-			)
-		} else {
-			r = append(r,
-				c.buildObservabilityCloudwatchLoggingCredentialsSecret(),
-			)
-		}
-	}
+	// if c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.CloudwatchLoggingEnabled {
+	// 	if cluster.ClusterType == api.EnterpriseDataPlaneClusterType.String() {
+	// 		r = append(r,
+	// 			c.buildObservabilityEnterpriseCloudwatchLoggingCredentialsSecret(cluster.OrganizationID, cluster.ClusterID),
+	// 		)
+	// 	} else {
+	// 		r = append(r,
+	// 			c.buildObservabilityCloudwatchLoggingCredentialsSecret(),
+	// 		)
+	// 	}
+	// }
 
-	r = append(r,
+	/*r = append(r,
 		c.buildObservatoriumDexSecretResource(),
 		c.buildObservatoriumSSOSecretResource(),
 		c.buildObservabilityCatalogSourceResource(),
 		c.buildObservabilityOperatorGroupResource(),
 		c.buildObservabilitySubscriptionResource(),
-	)
+	)*/
 
 	// if no static oidc configuration is provided, or if it is disabled, use the data plane service account
-	if !c.ObservabilityConfiguration.DataPlaneObservabilityConfig.Enabled || !c.ObservabilityConfiguration.DataPlaneObservabilityConfig.HasStaticOIDCConfiguration() {
+	/*if !c.ObservabilityConfiguration.DataPlaneObservabilityConfig.Enabled || !c.ObservabilityConfiguration.DataPlaneObservabilityConfig.HasStaticOIDCConfiguration() {
 		r = append(r,
 			c.buildObservabilityRemoteWriteServiceAccountCredential(&cluster),
 		)
@@ -789,7 +786,7 @@ func (c *ClusterManager) buildResourceSet(cluster api.Cluster) types.ResourceSet
 	strimziNamespace := strimziAddonNamespace
 	if c.OCMConfig.StrimziOperatorAddonID == "managed-kafka-qe" {
 		strimziNamespace = strimziQEAddonNamespace
-	}
+	}*/
 	kasFleetshardNamespace := kasFleetshardAddonNamespace
 	if c.OCMConfig.KasFleetshardAddonID == "kas-fleetshard-operator-qe" {
 		kasFleetshardNamespace = kasFleetshardQEAddonNamespace
@@ -798,256 +795,256 @@ func (c *ClusterManager) buildResourceSet(cluster api.Cluster) types.ResourceSet
 	// For standalone clusters, make sure that the namespaces is read from the config
 	// and that they are created before the pull secrets that references them
 	if cluster.ProviderType == api.ClusterProviderStandalone {
-		strimziNamespace = c.DataplaneClusterConfig.StrimziOperatorOLMConfig.Namespace
+		/* strimziNamespace = c.DataplaneClusterConfig.StrimziOperatorOLMConfig.Namespace */
 		kasFleetshardNamespace = c.DataplaneClusterConfig.KasFleetshardOperatorOLMConfig.Namespace
-		r = append(r, &k8sCoreV1.Namespace{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-				Kind:       "Namespace",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:   strimziNamespace,
-				Labels: clusters.StrimziOperatorCommonLabels(),
-			},
-		}, &k8sCoreV1.Namespace{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-				Kind:       "Namespace",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: kasFleetshardNamespace,
-			},
-		})
+		r = append(r, /* &k8sCoreV1.Namespace{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+					Kind:       "Namespace",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   strimziNamespace,
+					Labels: clusters.StrimziOperatorCommonLabels(),
+				},
+			}, */&k8sCoreV1.Namespace{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+					Kind:       "Namespace",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: kasFleetshardNamespace,
+				},
+			})
 	}
 
-	if s := c.buildImagePullSecret(strimziNamespace); s != nil {
+	/* if s := c.buildImagePullSecret(strimziNamespace); s != nil {
 		r = append(r, s)
-	}
-	if s := c.buildImagePullSecret(kasFleetshardNamespace); s != nil {
+	} */
+	/* if s := c.buildImagePullSecret(kasFleetshardNamespace); s != nil {
 		r = append(r, s)
-	}
-	if s := c.buildImagePullSecret(observabilityNamespace); s != nil {
+	} */
+	/* if s := c.buildImagePullSecret(observabilityNamespace); s != nil {
 		r = append(r, s)
-	}
+	} */
 	return types.ResourceSet{
 		Name:      syncsetName,
 		Resources: r,
 	}
 }
 
-func (c *ClusterManager) buildObservabilityNamespaceResource() *k8sCoreV1.Namespace {
-	return &k8sCoreV1.Namespace{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-			Kind:       "Namespace",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: observabilityNamespace,
-		},
-	}
-}
+// func (c *ClusterManager) buildObservabilityNamespaceResource() *k8sCoreV1.Namespace {
+// 	return &k8sCoreV1.Namespace{
+// 		TypeMeta: metav1.TypeMeta{
+// 			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+// 			Kind:       "Namespace",
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name: observabilityNamespace,
+// 		},
+// 	}
+// }
 
-func (c *ClusterManager) buildObservabilityCloudwatchLoggingCredentialsSecret() *k8sCoreV1.Secret {
-	stringDataMap := map[string]string{
-		"aws_access_key_id":     c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.Credentials.AccessKey,
-		"aws_secret_access_key": c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.Credentials.SecretAccessKey,
-	}
-	return &k8sCoreV1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.K8sCredentialsSecretName,
-			Namespace: c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.K8sCredentialsSecretNamespace,
-		},
-		Type:       k8sCoreV1.SecretTypeOpaque,
-		StringData: stringDataMap,
-	}
-}
+// func (c *ClusterManager) buildObservabilityCloudwatchLoggingCredentialsSecret() *k8sCoreV1.Secret {
+// 	stringDataMap := map[string]string{
+// 		"aws_access_key_id":     c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.Credentials.AccessKey,
+// 		"aws_secret_access_key": c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.Credentials.SecretAccessKey,
+// 	}
+// 	return &k8sCoreV1.Secret{
+// 		TypeMeta: metav1.TypeMeta{
+// 			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+// 			Kind:       "Secret",
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.K8sCredentialsSecretName,
+// 			Namespace: c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.K8sCredentialsSecretNamespace,
+// 		},
+// 		Type:       k8sCoreV1.SecretTypeOpaque,
+// 		StringData: stringDataMap,
+// 	}
+// }
 
-func (c *ClusterManager) buildObservabilityEnterpriseCloudwatchLoggingCredentialsSecret(orgID string, clusterID string) *k8sCoreV1.Secret {
-	cloudwatchCredentialSecret := &k8sCoreV1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.K8sCredentialsSecretName,
-			Namespace: c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.K8sCredentialsSecretNamespace,
-		},
-		Type: k8sCoreV1.SecretTypeOpaque,
-	}
+// func (c *ClusterManager) buildObservabilityEnterpriseCloudwatchLoggingCredentialsSecret(orgID string, clusterID string) *k8sCoreV1.Secret {
+// 	cloudwatchCredentialSecret := &k8sCoreV1.Secret{
+// 		TypeMeta: metav1.TypeMeta{
+// 			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+// 			Kind:       "Secret",
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.K8sCredentialsSecretName,
+// 			Namespace: c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.K8sCredentialsSecretNamespace,
+// 		},
+// 		Type: k8sCoreV1.SecretTypeOpaque,
+// 	}
 
-	credentials := c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.GetEnterpriseCredentials(orgID)
-	if credentials == nil {
-		glog.Warningf("Failed to find cloudwatch logging secret for cluster %q from organization with ID %q", clusterID, orgID)
-		return cloudwatchCredentialSecret
-	}
+// 	credentials := c.ObservabilityConfiguration.ObservabilityCloudWatchLoggingConfig.GetEnterpriseCredentials(orgID)
+// 	if credentials == nil {
+// 		glog.Warningf("Failed to find cloudwatch logging secret for cluster %q from organization with ID %q", clusterID, orgID)
+// 		return cloudwatchCredentialSecret
+// 	}
 
-	stringData := map[string]string{
-		"aws_access_key":        credentials.AccessKey,
-		"aws_secret_access_key": credentials.SecretAccessKey,
-	}
-	cloudwatchCredentialSecret.StringData = stringData
-	return cloudwatchCredentialSecret
-}
+// 	stringData := map[string]string{
+// 		"aws_access_key":        credentials.AccessKey,
+// 		"aws_secret_access_key": credentials.SecretAccessKey,
+// 	}
+// 	cloudwatchCredentialSecret.StringData = stringData
+// 	return cloudwatchCredentialSecret
+// }
 
-func (c *ClusterManager) buildObservatoriumDexSecretResource() *k8sCoreV1.Secret {
-	observabilityConfig := c.ObservabilityConfiguration
-	stringDataMap := map[string]string{
-		"authType":    observatorium.AuthTypeDex,
-		"gateway":     observabilityConfig.ObservatoriumGateway,
-		"tenant":      observabilityConfig.ObservatoriumTenant,
-		"dexUrl":      observabilityConfig.DexUrl,
-		"dexPassword": observabilityConfig.DexPassword,
-		"dexSecret":   observabilityConfig.DexSecret,
-		"dexUsername": observabilityConfig.DexUsername,
-	}
-	return &k8sCoreV1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      observatoriumDexSecretName,
-			Namespace: observabilityNamespace,
-		},
-		Type:       k8sCoreV1.SecretTypeOpaque,
-		StringData: stringDataMap,
-	}
-}
+// func (c *ClusterManager) buildObservatoriumDexSecretResource() *k8sCoreV1.Secret {
+// 	observabilityConfig := c.ObservabilityConfiguration
+// 	stringDataMap := map[string]string{
+// 		"authType":    observatorium.AuthTypeDex,
+// 		"gateway":     observabilityConfig.ObservatoriumGateway,
+// 		"tenant":      observabilityConfig.ObservatoriumTenant,
+// 		"dexUrl":      observabilityConfig.DexUrl,
+// 		"dexPassword": observabilityConfig.DexPassword,
+// 		"dexSecret":   observabilityConfig.DexSecret,
+// 		"dexUsername": observabilityConfig.DexUsername,
+// 	}
+// 	return &k8sCoreV1.Secret{
+// 		TypeMeta: metav1.TypeMeta{
+// 			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+// 			Kind:       "Secret",
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      observatoriumDexSecretName,
+// 			Namespace: observabilityNamespace,
+// 		},
+// 		Type:       k8sCoreV1.SecretTypeOpaque,
+// 		StringData: stringDataMap,
+// 	}
+// }
 
-func (c *ClusterManager) buildObservabilityRemoteWriteServiceAccountCredential(cluster *api.Cluster) *k8sCoreV1.Secret {
-	return &k8sCoreV1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "observability-proxy-credentials",
-			Namespace: observabilityNamespace,
-		},
-		StringData: map[string]string{
-			"client_id":     cluster.ClientID,
-			"client_secret": cluster.ClientSecret,
-			"issuer_url":    c.SsoService.GetRealmConfig().ValidIssuerURI,
-		},
-	}
-}
+// func (c *ClusterManager) buildObservabilityRemoteWriteServiceAccountCredential(cluster *api.Cluster) *k8sCoreV1.Secret {
+// 	return &k8sCoreV1.Secret{
+// 		TypeMeta: metav1.TypeMeta{
+// 			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+// 			Kind:       "Secret",
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      "observability-proxy-credentials",
+// 			Namespace: observabilityNamespace,
+// 		},
+// 		StringData: map[string]string{
+// 			"client_id":     cluster.ClientID,
+// 			"client_secret": cluster.ClientSecret,
+// 			"issuer_url":    c.SsoService.GetRealmConfig().ValidIssuerURI,
+// 		},
+// 	}
+// }
 
-func (c *ClusterManager) buildObservatoriumSSOSecretResource() *k8sCoreV1.Secret {
-	observabilityConfig := c.ObservabilityConfiguration
-	stringDataMap := map[string]string{
-		"authType":               observatorium.AuthTypeSso,
-		"tenant":                 observabilityConfig.RedHatSsoTenant,
-		"gateway":                "",
-		"redHatSsoAuthServerUrl": "",
-		"redHatSsoRealm":         "",
-		"metricsClientId":        "",
-		"metricsSecret":          "",
-	}
+// func (c *ClusterManager) buildObservatoriumSSOSecretResource() *k8sCoreV1.Secret {
+//	observabilityConfig := c.ObservabilityConfiguration
+//	stringDataMap := map[string]string{
+//		"authType":               observatorium.AuthTypeSso,
+//		"tenant":                 observabilityConfig.RedHatSsoTenant,
+//		"gateway":                "",
+//		"redHatSsoAuthServerUrl": "",
+//		"redHatSsoRealm":         "",
+//		"metricsClientId":        "",
+//		"metricsSecret":          "",
+//	}
+//
+//	if observabilityConfig.DataPlaneObservabilityConfig.Enabled {
+//		stringDataMap["gateway"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.RemoteWriteURL
+//		if observabilityConfig.DataPlaneObservabilityConfig.HasStaticOIDCConfiguration() {
+//			stringDataMap["redHatSsoRealm"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.Authentication.OIDC.Static.Realm
+//			stringDataMap["redHatSsoAuthServerUrl"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.Authentication.OIDC.Static.AuthorizationServer
+//			stringDataMap["metricsClientId"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.Authentication.OIDC.Static.Credentials.ClientID
+//			stringDataMap["metricsSecret"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.Authentication.OIDC.Static.Credentials.ClientSecret
+//		}
+//	}
+//
+//	return &k8sCoreV1.Secret{
+//		TypeMeta: metav1.TypeMeta{
+//			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+//			Kind:       "Secret",
+//		},
+//		ObjectMeta: metav1.ObjectMeta{
+//			Name:      observatoriumSSOSecretName,
+//			Namespace: observabilityNamespace,
+//		},
+//		Type:       k8sCoreV1.SecretTypeOpaque,
+//		StringData: stringDataMap,
+//	}
+//}
+//func (c *ClusterManager) buildObservabilityCatalogSourceResource() *v1alpha1.CatalogSource {
+//	return &v1alpha1.CatalogSource{
+//		TypeMeta: metav1.TypeMeta{
+//			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+//			Kind:       "CatalogSource",
+//		},
+//		ObjectMeta: metav1.ObjectMeta{
+//			Name:      observabilityCatalogSourceName,
+//			Namespace: observabilityNamespace,
+//		},
+//		Spec: v1alpha1.CatalogSourceSpec{
+//			SourceType: v1alpha1.SourceTypeGrpc,
+//			Image:      c.DataplaneClusterConfig.ObservabilityOperatorOLMConfig.IndexImage,
+//		},
+//	}
+//}
 
-	if observabilityConfig.DataPlaneObservabilityConfig.Enabled {
-		stringDataMap["gateway"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.RemoteWriteURL
-		if observabilityConfig.DataPlaneObservabilityConfig.HasStaticOIDCConfiguration() {
-			stringDataMap["redHatSsoRealm"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.Authentication.OIDC.Static.Realm
-			stringDataMap["redHatSsoAuthServerUrl"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.Authentication.OIDC.Static.AuthorizationServer
-			stringDataMap["metricsClientId"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.Authentication.OIDC.Static.Credentials.ClientID
-			stringDataMap["metricsSecret"] = observabilityConfig.DataPlaneObservabilityConfig.RemoteWriteConfiguration.Authentication.OIDC.Static.Credentials.ClientSecret
-		}
-	}
+// func (c *ClusterManager) buildObservabilityOperatorGroupResource() *v1alpha2.OperatorGroup {
+// 	return &v1alpha2.OperatorGroup{
+// 		TypeMeta: metav1.TypeMeta{
+// 			APIVersion: v1alpha2.SchemeGroupVersion.String(),
+// 			Kind:       "OperatorGroup",
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      observabilityOperatorGroupName,
+// 			Namespace: observabilityNamespace,
+// 		},
+// 		Spec: v1alpha2.OperatorGroupSpec{
+// 			TargetNamespaces: []string{observabilityNamespace},
+// 		},
+// 	}
+// }
 
-	return &k8sCoreV1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      observatoriumSSOSecretName,
-			Namespace: observabilityNamespace,
-		},
-		Type:       k8sCoreV1.SecretTypeOpaque,
-		StringData: stringDataMap,
-	}
-}
-func (c *ClusterManager) buildObservabilityCatalogSourceResource() *v1alpha1.CatalogSource {
-	return &v1alpha1.CatalogSource{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
-			Kind:       "CatalogSource",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      observabilityCatalogSourceName,
-			Namespace: observabilityNamespace,
-		},
-		Spec: v1alpha1.CatalogSourceSpec{
-			SourceType: v1alpha1.SourceTypeGrpc,
-			Image:      c.DataplaneClusterConfig.ObservabilityOperatorOLMConfig.IndexImage,
-		},
-	}
-}
+// func (c *ClusterManager) buildObservabilitySubscriptionResource() *v1alpha1.Subscription {
+// 	return &v1alpha1.Subscription{
+// 		TypeMeta: metav1.TypeMeta{
+// 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+// 			Kind:       "Subscription",
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      observabilitySubscriptionName,
+// 			Namespace: observabilityNamespace,
+// 		},
+// 		Spec: &v1alpha1.SubscriptionSpec{
+// 			CatalogSource:          observabilityCatalogSourceName,
+// 			Channel:                "alpha",
+// 			CatalogSourceNamespace: observabilityNamespace,
+// 			StartingCSV:            c.DataplaneClusterConfig.ObservabilityOperatorOLMConfig.SubscriptionStartingCSV,
+// 			InstallPlanApproval:    v1alpha1.ApprovalAutomatic,
+// 			Package:                observabilitySubscriptionName,
+// 		},
+// 	}
+// }
 
-func (c *ClusterManager) buildObservabilityOperatorGroupResource() *v1alpha2.OperatorGroup {
-	return &v1alpha2.OperatorGroup{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha2.SchemeGroupVersion.String(),
-			Kind:       "OperatorGroup",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      observabilityOperatorGroupName,
-			Namespace: observabilityNamespace,
-		},
-		Spec: v1alpha2.OperatorGroupSpec{
-			TargetNamespaces: []string{observabilityNamespace},
-		},
-	}
-}
+// func (c *ClusterManager) buildImagePullSecret(namespace string) *k8sCoreV1.Secret {
+// 	content := c.DataplaneClusterConfig.ImagePullDockerConfigContent
+// 	if strings.TrimSpace(content) == "" {
+// 		return nil
+// 	}
 
-func (c *ClusterManager) buildObservabilitySubscriptionResource() *v1alpha1.Subscription {
-	return &v1alpha1.Subscription{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
-			Kind:       "Subscription",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      observabilitySubscriptionName,
-			Namespace: observabilityNamespace,
-		},
-		Spec: &v1alpha1.SubscriptionSpec{
-			CatalogSource:          observabilityCatalogSourceName,
-			Channel:                "alpha",
-			CatalogSourceNamespace: observabilityNamespace,
-			StartingCSV:            c.DataplaneClusterConfig.ObservabilityOperatorOLMConfig.SubscriptionStartingCSV,
-			InstallPlanApproval:    v1alpha1.ApprovalAutomatic,
-			Package:                observabilitySubscriptionName,
-		},
-	}
-}
+// 	dataMap := map[string][]byte{
+// 		k8sCoreV1.DockerConfigJsonKey: []byte(content),
+// 	}
 
-func (c *ClusterManager) buildImagePullSecret(namespace string) *k8sCoreV1.Secret {
-	content := c.DataplaneClusterConfig.ImagePullDockerConfigContent
-	if strings.TrimSpace(content) == "" {
-		return nil
-	}
-
-	dataMap := map[string][]byte{
-		k8sCoreV1.DockerConfigJsonKey: []byte(content),
-	}
-
-	return &k8sCoreV1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
-			Kind:       "Secret",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      kafkaConstants.ImagePullSecretName,
-			Namespace: namespace,
-		},
-		Type: k8sCoreV1.SecretTypeDockerConfigJson,
-		Data: dataMap,
-	}
-}
+// 	return &k8sCoreV1.Secret{
+// 		TypeMeta: metav1.TypeMeta{
+// 			APIVersion: k8sCoreV1.SchemeGroupVersion.String(),
+// 			Kind:       "Secret",
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      kafkaConstants.ImagePullSecretName,
+// 			Namespace: namespace,
+// 		},
+// 		Type: k8sCoreV1.SecretTypeDockerConfigJson,
+// 		Data: dataMap,
+// 	}
+// }
 
 // buildReadOnlyGroupResource creates a group to which read-only cluster users are added.
 func (c *ClusterManager) buildReadOnlyGroupResource() *userv1.Group {
