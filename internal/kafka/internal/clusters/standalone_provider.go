@@ -3,6 +3,7 @@ package clusters
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/internal/kafka/constants"
 	"github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/internal/kafka/internal/clusters/types"
@@ -10,7 +11,7 @@ import (
 
 	"github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/pkg/api"
 	"github.com/bf2fc6cc711aee1a0c2a/kas-fleet-manager/pkg/db"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	addons "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsv1alpha2 "github.com/operator-framework/api/pkg/operators/v1alpha2"
 	v1 "k8s.io/api/core/v1"
@@ -180,9 +181,10 @@ func (s *StandaloneProvider) InstallKasFleetshard(clusterSpec *types.ClusterSpec
 		Resources: []interface{}{
 			s.buildKASFleetShardOperatorNamespace(),
 			s.buildKASFleetShardSyncSecret(params),
-			s.buildKASFleetShardOperatorCatalogSource(),
+			s.buildKASFleetShardOperatorAddon(),
+			/* s.buildKASFleetShardOperatorCatalogSource(),
 			s.buildKASFleetShardOperatorOperatorGroup(),
-			s.buildKASFleetShardOperatorSubscription(),
+			s.buildKASFleetShardOperatorSubscription(), */
 		},
 	})
 
@@ -198,6 +200,48 @@ func (s *StandaloneProvider) buildKASFleetShardOperatorNamespace() *v1.Namespace
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: kasFleetshardOLMConfig.Namespace,
+		},
+	}
+}
+
+func (s *StandaloneProvider) buildKASFleetShardOperatorAddon() *addons.Addon {
+	kasFleetshardOLMConfig := s.dataplaneClusterConfig.KasFleetshardOperatorOLMConfig
+
+	envVars := make([]addons.EnvObject, len(kasFleetshardOLMConfig.SubscriptionConfig.Env))
+	for i := range kasFleetshardOLMConfig.SubscriptionConfig.Env {
+		envVars[i] = addons.EnvObject{
+			Name:  kasFleetshardOLMConfig.SubscriptionConfig.Env[i].Name,
+			Value: kasFleetshardOLMConfig.SubscriptionConfig.Env[i].Value,
+		}
+	}
+
+	return &addons.Addon{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: addons.GroupVersion.String(),
+			Kind:       "Addon",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: strings.TrimPrefix(kasFleetshardOLMConfig.Namespace, "redhat-"),
+		},
+		Spec: addons.AddonSpec{
+			DisplayName: "Managed Kafka Fleetshard Operator",
+			Namespaces: []addons.AddonNamespace{{
+				Name: kasFleetshardOLMConfig.Namespace,
+			}},
+			Install: addons.AddonInstallSpec{
+				Type: addons.OLMOwnNamespace,
+				OLMOwnNamespace: &addons.AddonInstallOLMOwnNamespace{
+					AddonInstallOLMCommon: addons.AddonInstallOLMCommon{
+						Namespace:          kasFleetshardOLMConfig.Namespace,
+						CatalogSourceImage: kasFleetshardOLMConfig.IndexImage,
+						Channel:            kasFleetshardOLMConfig.SubscriptionChannel,
+						PackageName:        kasFleetshardOLMConfig.Package,
+						Config: &addons.SubscriptionConfig{
+							EnvironmentVariables: envVars,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -218,8 +262,8 @@ func (s *StandaloneProvider) buildKASFleetShardOperatorCatalogSource() *operator
 			Name:      kasFleetShardOperatorCatalogSourceName,
 			Namespace: kasFleetshardOLMConfig.Namespace,
 		},
-		Spec: v1alpha1.CatalogSourceSpec{
-			SourceType: v1alpha1.SourceTypeGrpc,
+		Spec: operatorsv1alpha1.CatalogSourceSpec{
+			SourceType: operatorsv1alpha1.SourceTypeGrpc,
 			Image:      kasFleetshardOLMConfig.IndexImage,
 			Secrets:    secrets,
 		},
